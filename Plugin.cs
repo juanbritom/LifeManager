@@ -9,7 +9,7 @@ using KeyCode = UnityEngine.KeyCode;
 
 namespace LifeManager
 {
-    [BepInPlugin("zuk.digimonno.LifeManager", "Life Manager", "1.1.0-beta")]
+    [BepInPlugin("zuk.digimonno.LifeManager", "Life Manager", "1.1.1-beta")]
     public class Plugin : BasePlugin
     {
         public static ConfigEntry<double> LifeToAdd;
@@ -48,7 +48,7 @@ namespace LifeManager
             //fazer segurando botao do partner e apertando cima/baixo
             [HarmonyPostfix]
             public static void Update_Patcher(CScenarioScript __instance)
-            {             
+            {
                 if (Input.GetKey(keys[0])) //left
                 {
                     if (Input.GetKey(keys[2])) //up
@@ -57,13 +57,15 @@ namespace LifeManager
                     }
                     if (Input.GetKey(keys[3])) //down
                     {
+                        if (AddAgeOnLifeRemove.Value) { 
                         __instance._GetPartnerDigimonData(AppInfo.PARTNER_NO.Left).m_time_from_age += (float)LifeToRemove.Value;
                         __instance._AddPartnerLifeTime(AppInfo.PARTNER_NO.Left, -(float)LifeToRemove.Value);
                         __instance._GetPartnerCtrl(AppInfo.PARTNER_NO.Left)._UpdateAge();
-                    }
-                    else
-                    {
-                        __instance._AddPartnerLifeTime(AppInfo.PARTNER_NO.Left, -(float)LifeToRemove.Value);
+                        }
+                        else
+                        {
+                            __instance._AddPartnerLifeTime(AppInfo.PARTNER_NO.Left, -(float)LifeToRemove.Value);
+                        }
                     }
                 }
                 if (Input.GetKey(keys[1])) //right
