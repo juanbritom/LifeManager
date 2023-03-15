@@ -2,17 +2,19 @@
 using BepInEx.Configuration;
 using BepInEx.Unity.IL2CPP;
 using HarmonyLib;
+using System.Diagnostics.Metrics;
 using UnityEngine;
 using Input = UnityEngine.Input;
 using KeyCode = UnityEngine.KeyCode;
 
 namespace LifeManager
 {
-    [BepInPlugin("zuk.digimonno.LifeManager", "Life Manager", "1.0.0-beta")]
+    [BepInPlugin("zuk.digimonno.LifeManager", "Life Manager", "1.0.1-beta")]
     public class Plugin : BasePlugin
     {
         public static ConfigEntry<double> LifeToAdd;
         public static ConfigEntry<double> LifeToRemove;
+        public static ConfigEntry<bool> AddAgeOnLifeRemove;
         public static ConfigEntry<KeyCode> ControlKeysLeft;
         public static ConfigEntry<KeyCode> ControlKeysRight;
         public static ConfigEntry<KeyCode> ControlKeysUp;
@@ -27,6 +29,7 @@ namespace LifeManager
             ControlKeysRight = Config.Bind("Controls", "Select Partner 2", KeyCode.RightArrow, "");
             ControlKeysUp = Config.Bind("Controls", "Add Life", KeyCode.UpArrow, "");
             ControlKeysDown = Config.Bind("Controls", "Remove Life", KeyCode.DownArrow, "");
+            AddAgeOnLifeRemove = Config.Bind("General", "Add to Age when removing Life?", true, "Useful to trigger digievolution");
             keys = new KeyCode[]{ ControlKeysLeft.Value, ControlKeysRight.Value, ControlKeysUp.Value, ControlKeysDown.Value };
             // Plugin startup logic
 
@@ -39,37 +42,52 @@ namespace LifeManager
             Log.LogInfo($"Plugin {MyPluginInfo.PLUGIN_GUID} loaded!");
         }
 
-        [HarmonyPatch(typeof(MainGameManager), "Update")]
-        public static class upMod
+        [HarmonyPatch(typeof(CScenarioScript), "Update")]
+        public class upMod
         {
             //fazer segurando botao do partner e apertando cima/baixo
-            [HarmonyPrefix]
-            public static bool Update_Patcher()
+            [HarmonyPostfix]
+            public static void Update_Patcher(CScenarioScript __instance)
             {             
-                if (Input.GetKey(keys[0]))
+                if (Input.GetKey(keys[0])) //left
                 {
-                    if (Input.GetKey(keys[2]))
+                    if (Input.GetKey(keys[2])) //up
                     {
-                        new CScenarioScript()._AddPartnerLifeTime(AppInfo.PARTNER_NO.Left, (float)LifeToAdd.Value);
+                        __instance._AddPartnerLifeTime(AppInfo.PARTNER_NO.Left, (float)LifeToAdd.Value);
                     }
-                    if (Input.GetKey(keys[3]))
+                    if (Input.GetKey(keys[3])) //down
                     {
-                        new CScenarioScript()._AddPartnerLifeTime(AppInfo.PARTNER_NO.Left, -(float)LifeToRemove.Value);
+                        __instance._GetPartnerDigimonData(AppInfo.PARTNER_NO.Left).m_time_from_age += (float)LifeToRemove.Value;
+                        __instance._AddPartnerLifeTime(AppInfo.PARTNER_NO.Left, -(float)LifeToRemove.Value);
+                        __instance._GetPartnerCtrl(AppInfo.PARTNER_NO.Left)._UpdateAge();
+                    }
+                    else
+                    {
+                        __instance._AddPartnerLifeTime(AppInfo.PARTNER_NO.Left, -(float)LifeToRemove.Value);
                     }
                 }
-                if (Input.GetKey(keys[1]))
+                if (Input.GetKey(keys[1])) //right
                 {
-                    if (Input.GetKey(keys[2]))
+                    if (Input.GetKey(keys[2])) //up
                     {
-                        new CScenarioScript()._AddPartnerLifeTime(AppInfo.PARTNER_NO.Right, (float)LifeToAdd.Value);
+                        __instance._AddPartnerLifeTime(AppInfo.PARTNER_NO.Right, (float)LifeToAdd.Value);
                     }
-                    if (Input.GetKey(keys[3]))
+                    if (Input.GetKey(keys[3])) //down
                     {
-                        new CScenarioScript()._AddPartnerLifeTime(AppInfo.PARTNER_NO.Right, -(float)LifeToRemove.Value);
+                        if (AddAgeOnLifeRemove.Value)
+                        {
+                            __instance._GetPartnerDigimonData(AppInfo.PARTNER_NO.Right).m_time_from_age+=(float)LifeToRemove.Value;
+                            __instance._AddPartnerLifeTime(AppInfo.PARTNER_NO.Right, -(float)LifeToRemove.Value);
+                            __instance._GetPartnerCtrl(AppInfo.PARTNER_NO.Right)._UpdateAge();
+                        }
+                        else
+                        {
+                            __instance._AddPartnerLifeTime(AppInfo.PARTNER_NO.Right, -(float)LifeToRemove.Value);
+                        }
+                        
                     }
                 }
 
-                return true;
             }
         }
 
