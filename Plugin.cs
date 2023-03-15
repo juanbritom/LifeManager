@@ -9,7 +9,7 @@ using KeyCode = UnityEngine.KeyCode;
 
 namespace LifeManager
 {
-    [BepInPlugin("zuk.digimonno.LifeManager", "Life Manager", "1.0.1-beta")]
+    [BepInPlugin("zuk.digimonno.LifeManager", "Life Manager", "1.1.0-beta")]
     public class Plugin : BasePlugin
     {
         public static ConfigEntry<double> LifeToAdd;
